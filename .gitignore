@@ -1,0 +1,70 @@
+# ==========================================
+# 🛑 FICHIERS SYSTÈME & IDE
+# ==========================================
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# ==========================================
+# 🐍 PYTHON & ENVIRONNEMENT
+# ==========================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# ==========================================
+# 🔒 SÉCURITÉ & SECRETS (CRITIQUE)
+# ==========================================
+
+.env
+.env.local
+*.key
+*.pem
+
+# ==========================================
+# 📂 DONNÉES DU PROJET (VEV RAG)
+# ==========================================
+
+# On ignore tous les documents (confidentiels) et la base de données
+data/raw/*
+data/processed/*
+data/lancedb/*
+
+# On garde les fichiers .gitkeep s'ils existent pour maintenir la structure des dossiers
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/lancedb/.gitkeep
+
+# ==========================================
+# 🤖 MODÈLES IA & CACHES (FICHIERS LOURDS)
+# ==========================================
+
+# On ne versionne pas les fichiers GGUF ou ONNX (trop lourds pour Git)
+models/llm/*
+models/embeddings/*
+*.gguf
+*.bin
+*.onnx
+
+# Caches des librairies IA
+.cache/
+hf_cache/
+sentence_transformers_cache/
+gptcache_data/
+
+# ==========================================
+# 📊 LOGS & TESTS
+# ==========================================
+
+*.log
+.pytest_cache/
+.coverage
+htmlcov/

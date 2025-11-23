@@ -1,0 +1,14 @@
+### 1. "When was the field of Artificial Intelligence officially founded?"
+Expected answer: Dartmouth Workshop, 1956.
+
+### 2. "What caused the first AI winter?"
+Expected answer: Lighthill report + reduced government funding in 1973.
+
+### 3. "How did ancient myths and early philosophers influence the origins of AI?"
+Expected answer: Myths of artificial beings + symbolic reasoning theories.
+
+### 4. "Why did investors withdraw support from AI research in the late 1980s?"
+Expected answer: Second AI winter due to unmet expectations.
+
+### 5. "How has big data contributed to modern AI progress?"
+Expected answer: Enabled large-scale machine learning in the 21st century.
