@@ -38,10 +38,10 @@ data/raw/*
 data/processed/*
 data/lancedb/*
 
-# On garde les fichiers .gitkeep s'ils existent pour maintenir la structure des dossiers
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/lancedb/.gitkeep
+# On garde les fichiers Instructions.md pour les instructions
+!data/raw/Instructions.md
+!data/processed/Instructions.md
+!data/lancedb/Instructions.md
 
 # ==========================================
 # 🤖 MODÈLES IA & CACHES (FICHIERS LOURDS)
@@ -54,9 +54,9 @@ models/embeddings/*
 *.bin
 *.onnx
 
-# On garde les fichiers .gitkeep pour maintenir la structure des dossiers
-!models/llm/.gitkeep
-!models/embeddings/.gitkeep
+# On garde les fichiers Instructions.md pour les instructions
+!models/llm/Instructions.md
+!models/embeddings/Instructions.md
 
 # Caches des librairies IA
 .cache/

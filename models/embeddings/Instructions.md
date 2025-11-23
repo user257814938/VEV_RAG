@@ -1,0 +1,2 @@
+# Rôle : Cache des Embeddings
+# Pourquoi est-il vide au départ ? : Ce dossier sera créé et rempli automatiquement par FastEmbed et Sentence-Transformers (pour le Reranker). Il contient les petits fichiers ONNX ou PyTorch de ces modèles (BGE-M3, MXBai).

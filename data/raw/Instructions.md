@@ -1,0 +1,2 @@
+# Rôle : Documents Bruts
+# Pourquoi est-il vide au départ ? : C'est ici que Streamlit sauvegarde le PDF ou le DOCX que vous uploadez (via app.py) avant que Docling ne le lise. Vous devez y glisser vos fichiers.
