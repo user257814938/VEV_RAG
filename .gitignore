@@ -54,6 +54,10 @@ models/embeddings/*
 *.bin
 *.onnx
 
+# On garde les fichiers .gitkeep pour maintenir la structure des dossiers
+!models/llm/.gitkeep
+!models/embeddings/.gitkeep
+
 # Caches des librairies IA
 .cache/
 hf_cache/
