@@ -63,6 +63,9 @@ hf_cache/
 sentence_transformers_cache/
 gptcache_data/
 
+# Cache semantique LanceDB (genere automatiquement)
+models/lancedb_cache/
+
 # ==========================================
 # 📊 LOGS & TESTS
 # ==========================================
