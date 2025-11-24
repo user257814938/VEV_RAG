@@ -25,8 +25,8 @@ EMBEDDING_DIM = 768                                                             
 
 # Paramètres du LLM (Génération)
 LLM_MODEL_FILE = "qwen2.5-0.5b-instruct-fp16.gguf"                                         # LLM_MODEL_FILE : nom du fichier modèle compressé | gguf : assurez-vous d'avoir téléchargé ce fichier GGUF dans models/llm/ ou laissez None pour téléchargement auto
-LLM_CONTEXT_WINDOW = 4096                                                       # LLM_CONTEXT_WINDOW : nombre maximum de tokens en entrée (mémoire à court terme)
-LLM_MAX_TOKENS = 1024                                                           # LLM_MAX_TOKENS : nombre maximum de tokens générés en réponse
+LLM_CONTEXT_WINDOW = 4000                                                       # LLM_CONTEXT_WINDOW : nombre maximum de tokens en entrée (mémoire à court terme)
+LLM_MAX_TOKENS = 1000                                                           # LLM_MAX_TOKENS : nombre maximum de tokens générés en réponse
 
 # Étape 5 — Paramètres du Pipeline RAG
 CHUNK_SIZE = 500                                                                # CHUNK_SIZE : taille cible des morceaux de texte (en tokens ou caractères selon la méthode)
