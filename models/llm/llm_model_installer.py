@@ -1,3 +1,5 @@
+# Pour lancer le script : python llm_model_installer.py
+
 from llama_cpp import Llama
 import os
 import re
