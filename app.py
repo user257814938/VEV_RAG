@@ -30,8 +30,8 @@ def initialize_agent() -> Optional[VEVAgent]:                                   
 # Étape 4 — Fonction pour gérer l'upload de documents locaux
 def handle_file_upload(agent: VEVAgent):                                        # def : définir la fonction | handle_file_upload : gestion de l'upload
     uploaded_file = st.sidebar.file_uploader(                                   # uploaded_file : objet fichier | st.sidebar.file_uploader : widget d'upload dans la barre latérale
-        "Upload Document (PDF, DOCX)",                                          # "Upload..." : label
-        type=["pdf", "docx"],                                                   # type : extensions acceptées
+        "Upload Document (PDF, DOCX, TXT)",                                     # "Upload..." : label mis à jour avec TXT
+        type=["pdf", "docx", "txt"],                                            # type : extensions acceptées (ajout de "txt")
         key="file_uploader"                                                     # key : identifiant unique
     )
     

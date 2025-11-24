@@ -1,65 +1,104 @@
-# Objectif — Implémenter le cache sémantique pour éviter de recalculer les réponses aux questions similaires (latence zéro pour les doublons)
+# Objectif — Cache sémantique 100% LanceDB (sans FAISS)
+#            Si une requête est similaire à une ancienne, on renvoie la réponse direct.
 
-# Étape 1 — Importer les dépendances
-import logging                                                                  # import : charger le module standard | logging : gestion des journaux
-from typing import Optional                                                     # from : importer depuis le typage | typing : module types | Optional : type pour gérer l'absence de valeur
-from gptcache import Cache                                                      # from : importer la librairie cache | gptcache : outil de cache sémantique | Cache : classe principale
-from gptcache.manager import CacheBase, VectorBase, get_data_manager            # from : importer des gestionnaires | gptcache.manager : outils pour la base de données du cache
-from gptcache.similarity_evaluation import SearchDistanceEvaluation             # from : importer la stratégie | gptcache.similarity_evaluation : utilise la méthode d'évaluation de distance
-from gptcache.embedding import Onnx                                             # from : importer Onnx si besoin, mais on utilise Custom
-from src.core.config import MODELS_DIR, EMBEDDING_MODEL_NAME, LLM_MAX_TOKENS    # from : importer les constantes | src.core.config : configuration projet | MODELS_DIR, ... : chemins et tailles
-from src.indexing.embedder import FastEmbedder                                  # from : importer l'embedder | src.indexing.embedder : notre outil d'encodage FastEmbed
+import logging
+from typing import Optional
+from datetime import datetime
 
-# Étape 2 — Configurer le logging
-logger = logging.getLogger(__name__)                                            # logger : objet enregistreur | = : assignation | logging.getLogger(__name__) : récupérer le logger actuel
+import numpy as np
+import lancedb
 
-# Étape 3 — Définir le gestionnaire d'Embeddings pour GPTCache - Il doit savoir comment encoder les requêtes pour le cache
-class CustomCacheEmbedder:                                                      # class : définir une classe | CustomCacheEmbedder : adapter FastEmbedder à l'interface de GPTCache
-    def __init__(self, embedder: FastEmbedder):                                 # def : constructeur | self : instance | embedder : notre FastEmbedder
-        self.embedder = embedder                                                # self.embedder : stocker l'outil
-        self.dimension = self.embedder.dimension                                # self.dimension : dimension des vecteurs (1024)
+from src.core.config import MODELS_DIR
+from src.indexing.embedder import FastEmbedder
 
-    def to_embeddings(self, data, **kwargs):                                    # def : méthode obligatoire pour GPTCache | to_embeddings : encode la donnée
-        """Convertit la requête texte en vecteur."""
-        # data doit être le texte de la requête
-        embedding = self.embedder.embed_query(data)                             # embedding : vecteur numpy | self.embedder.embed_query(...) : appel à notre méthode d'encodage rapide
-        return embedding.tolist()                                               # return : renvoyer le vecteur converti en liste Python (format attendu par le cache)
+logger = logging.getLogger(__name__)
 
-# Étape 4 — Initialiser le Cache Sémantique
-def init_semantic_cache(embedder: FastEmbedder) -> Optional[Cache]:             # def : définir la fonction d'initialisation | init_semantic_cache : nom | -> : retour | Optional[Cache] : objet Cache ou None
-    """
-    Initialise le cache sémantique avec notre FastEmbedder et un gestionnaire de données local.
-    """
-    try:                                                                        # try : bloc de sécurité
-        # 1. Configuration des chemins
-        cache_data_dir = MODELS_DIR / "gptcache_data"                           # cache_data_dir : dossier de stockage du cache (dans models/)
-        cache_data_dir.mkdir(parents=True, exist_ok=True)                       # cache_data_dir.mkdir(...) : créer le dossier s'il n'existe pas
+CACHE_TABLE_NAME = "semantic_cache"
 
-        # 2. Configuration de la base de données du cache - Utilisation de SQLite pour les métadonnées (CacheBase) et de FAISS (VecteurBase) pour la recherche de similarité
-        cache_base = CacheBase(name='sqlite', sql_url=f"sqlite:///{str(cache_data_dir / 'sqlite.db')}") # cache_base : base de données SQL (où stocker la requête et la réponse)
-        vector_base = VectorBase(name=str(cache_data_dir / "faiss.index"))      # vector_base : index vectoriel (où stocker les embeddings de la requête)
 
-        # 3. Création du gestionnaire de données
-        data_manager = get_data_manager(                                        # data_manager : objet orchestrateur
-            cache_base=cache_base,                                              # cache_base : lien vers la base SQL
-            vector_base=vector_base                                             # vector_base : lien vers l'index FAISS
+class LanceSemanticCache:
+    """Cache sémantique basé sur LanceDB (100% local, zéro FAISS)."""
+    
+    def __init__(self, db: lancedb.DBConnection, table, embedder: FastEmbedder, threshold: float = 0.90):
+        self.db = db                                                            # self.db : connexion à la base LanceDB
+        self.table = table                                                      # self.table : table du cache
+        self.embedder = embedder                                                # self.embedder : notre FastEmbedder pour encoder les requêtes
+        self.threshold = threshold                                              # threshold : seuil cosine (>0.90 = quasi identique)
+
+    def _cosine(self, a: np.ndarray, b: np.ndarray) -> float:
+        """Calcule la similarité cosine entre deux vecteurs."""
+        a = a / (np.linalg.norm(a) + 1e-9)                                      # normalisation vecteur a
+        b = b / (np.linalg.norm(b) + 1e-9)                                      # normalisation vecteur b
+        return float(np.dot(a, b))                                              # produit scalaire = cosine
+
+    def lookup(self, query: str) -> Optional[str]:
+        """Retourne une réponse si une requête similaire existe."""
+        q_vec = self.embedder.embed_query(query)                                # q_vec : encoder la requête
+
+        # Recherche Top-1 dans LanceDB
+        res = (
+            self.table.search(q_vec)
+            .limit(1)
+            .to_list()
         )
 
-        # 4. Création du cache
-        cache = Cache(                                                          # cache : l'objet cache final
-            cache_obj=data_manager,                                             # cache_obj : utiliser notre gestionnaire
-            similarity_strategy=SearchDistanceEvaluation(),                     # similarity_strategy : utiliser la similarité vectorielle
-            embedding_func=CustomCacheEmbedder(embedder),                       # embedding_func : utiliser notre FastEmbedder adapté
-            max_size=10000,                                                     # max_size : nombre max d'entrées dans le cache
-        )
-        logger.info("Semantic Cache initialized with FAISS.")                   # logger.info : confirmation
+        if not res:                                                             # if : si aucun résultat
+            return None
 
-        return cache                                                            # return : l'objet cache
+        best = res[0]                                                           # best : meilleur résultat
+        best_vec = np.array(best["embedding"], dtype=np.float32)                # best_vec : vecteur du meilleur résultat
+        sim = self._cosine(q_vec, best_vec)                                     # sim : similarité cosine
 
-    except Exception as e:                                                      # except : en cas d'échec
-        logger.warning(f"Failed to initialize GPTCache. Running without cache: {e}") # logger.warning : on prévient mais on ne bloque pas le programme
-        return None                                                             # return : renvoyer None si échec
+        if sim >= self.threshold:                                               # if : si similarité suffisante
+            logger.info(f"Cache hit! Similarity: {sim:.3f}")                    # logger.info : log du cache hit
+            return best["answer"]                                               # return : réponse cachée
 
-# Étape 5 — Instancier le cache (Singleton)
-# Nous devons appeler cette fonction après avoir initialisé l'embedder dans le module principal
-# cache_manager = init_semantic_cache(embedder)
+        logger.info(f"Cache miss (best sim: {sim:.3f})")                        # logger.info : cache miss
+        return None
+
+    def store(self, query: str, answer: str):
+        """Ajoute une entrée au cache."""
+        q_vec = self.embedder.embed_query(query).tolist()                       # q_vec : encoder la requête et convertir en liste
+        self.table.add([{                                                       # self.table.add : ajouter une entrée
+            "query": query,                                                     # "query" : requête texte
+            "answer": answer,                                                   # "answer" : réponse générée
+            "embedding": q_vec,                                                 # "embedding" : vecteur de la requête
+            "ts": datetime.utcnow().isoformat()                                 # "ts" : timestamp UTC
+        }])
+        logger.info("Answer stored in cache")                                   # logger.info : confirmation
+
+
+def init_semantic_cache(embedder: FastEmbedder) -> Optional[LanceSemanticCache]:
+    """
+    Initialise le cache sémantique LanceDB (100% local, pas de FAISS).
+    """
+    try:
+        cache_dir = MODELS_DIR / "lancedb_cache"                                # cache_dir : dossier du cache
+        cache_dir.mkdir(parents=True, exist_ok=True)                            # mkdir : créer le dossier si nécessaire
+
+        db = lancedb.connect(str(cache_dir))                                    # db : connexion à LanceDB
+
+        # Schéma simple pour le cache
+        if CACHE_TABLE_NAME in db.table_names():                                # if : si la table existe déjà
+            table = db.open_table(CACHE_TABLE_NAME)                             # table : ouvrir la table existante
+            logger.info(f"Opened existing cache table ({table.count_rows()} entries)") # logger.info : nombre d'entrées
+        else:
+            # Créer la table avec un schéma dummy
+            table = db.create_table(
+                CACHE_TABLE_NAME,
+                data=[{
+                    "query": "",                                                # query : requête vide (dummy)
+                    "answer": "",                                               # answer : réponse vide (dummy)
+                    "embedding": [0.0] * embedder.dimension,                    # embedding : vecteur zéro (dummy)
+                    "ts": ""                                                    # ts : timestamp vide (dummy)
+                }],
+                mode="overwrite"
+            )
+            logger.info("Created new cache table")                              # logger.info : création table
+
+        logger.info("✅ LanceDB semantic cache initialized (FAISS-free)")        # logger.info : succès
+        return LanceSemanticCache(db, table, embedder)                          # return : instance du cache
+
+    except Exception as e:                                                      # except : en cas d'erreur
+        logger.warning(f"Failed to init LanceDB cache, running without cache: {e}") # logger.warning : avertissement
+        return None                                                             # return : None si échec

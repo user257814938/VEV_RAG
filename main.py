@@ -73,7 +73,7 @@ class VEVAgent:                                                                 
 
         # 1. Vérification du Cache Sémantique (Accélérateur)
         if self.cache:                                                          # if : si le cache est actif (doit être mis à jour par app.py)
-            cached_answer = self.cache.get(query)                               # cached_answer : essayer de trouver la réponse
+            cached_answer = self.cache.lookup(query)                            # cached_answer : essayer de trouver la réponse avec lookup() (LanceDB)
             if cached_answer:                                                   # if : si une réponse est trouvée
                 logger.info("Cache hit! Returning cached answer.")              # logger.info : succès du cache
                 return GeneratedAnswer(query=query, answer=cached_answer, sources=[], processing_time=time() - start_time) # return : renvoyer la réponse du cache immédiatement
@@ -113,7 +113,7 @@ class VEVAgent:                                                                 
         
         # 7. Mise en Cache de la réponse
         if self.cache:                                                          # if : si le cache est actif
-            self.cache.set(query, final_answer)                                 # self.cache.set(...) : enregistrer la question/réponse
+            self.cache.store(query, final_answer)                               # self.cache.store(...) : enregistrer la question/réponse (LanceDB)
 
         # 8. Renvoyer la réponse structurée
         end_time = time()                                                       # temps final

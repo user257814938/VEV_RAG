@@ -37,7 +37,7 @@ class FastEmbedder:                                                             
     def embed_query(self, query: str) -> np.ndarray:                            # def : définir la méthode | embed_query : pour encoder une seule requête (question) | -> : retour type | np.ndarray : tableau numpy
         """Encode une seule chaîne de requête."""
         # L'encodage d'une requête est un cas d'usage fréquent
-        embeddings = self.model.embed([query])                                  # embeddings : résultat de l'encodage | self.model.embed(...) : méthode d'encodage fastembed | [query] : doit être une liste (fastembed travaille par lot)
+        embeddings = list(self.model.embed([query]))                            # embeddings : résultat de l'encodage converti en liste | list(...) : ✅ Fix générateur FastEmbed | self.model.embed(...) : méthode d'encodage fastembed | [query] : doit être une liste (fastembed travaille par lot)
         return embeddings[0].astype(np.float32)                                 # return : renvoyer le premier (et unique) vecteur | .astype(np.float32) : assurer le bon format (float32 est le standard pour les DB vectorielles)
 
     # Étape 3.4 — Méthode pour encoder les documents (chunks)
@@ -46,7 +46,7 @@ class FastEmbedder:                                                             
         logger.info(f"Embedding {len(documents)} documents...")                 # logger.info : afficher le nombre de documents à traiter | f"..." : chaîne formatée
         
         # FastEmbed gère le batching interne pour le CPU, le rendant efficace
-        embeddings = self.model.embed(documents)                                # embeddings : liste de vecteurs
+        embeddings = list(self.model.embed(documents))                          # embeddings : liste de vecteurs | list(...) : ✅ Fix générateur FastEmbed
         
         # On doit convertir le résultat en liste de tableaux numpy float32
         return [emb.astype(np.float32) for emb in embeddings]                    # return : renvoyer la liste finale de vecteurs

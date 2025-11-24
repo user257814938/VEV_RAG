@@ -24,7 +24,7 @@ EMBEDDING_MODEL_NAME = "BAAI/bge-base-en-v1.5"                                  
 EMBEDDING_DIM = 768                                                             # EMBEDDING_DIM : dimension des vecteurs de sortie (spécifique à BGE-M3)
 
 # Paramètres du LLM (Génération)
-LLM_MODEL_FILE = "Qwen3-4B-Q4_K_M.gguf"                                         # LLM_MODEL_FILE : nom du fichier modèle compressé | gguf : assurez-vous d'avoir téléchargé ce fichier GGUF dans models/llm/ ou laissez None pour téléchargement auto
+LLM_MODEL_FILE = "qwen2.5-0.5b-instruct-fp16.gguf"                                         # LLM_MODEL_FILE : nom du fichier modèle compressé | gguf : assurez-vous d'avoir téléchargé ce fichier GGUF dans models/llm/ ou laissez None pour téléchargement auto
 LLM_CONTEXT_WINDOW = 4096                                                       # LLM_CONTEXT_WINDOW : nombre maximum de tokens en entrée (mémoire à court terme)
 LLM_MAX_TOKENS = 1024                                                           # LLM_MAX_TOKENS : nombre maximum de tokens générés en réponse
 

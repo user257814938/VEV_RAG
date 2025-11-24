@@ -1,4 +1,4 @@
-# Objectif — Charger des documents complexes (PDF, DOCX) et les convertir en Markdown structuré grâce à l'IA (Docling)
+# Objectif — Charger des documents complexes (PDF, DOCX, TXT) et les convertir en Markdown structuré grâce à l'IA (Docling)
 
 # Étape 1 — Importer les dépendances
 import logging                                                                  # import : charger le module standard | logging : gestion des journaux d'événements (logs)
@@ -21,7 +21,7 @@ except Exception as e:                                                          
 # Étape 4 — Fonction principale de chargement
 def load_document(file_path: str) -> Tuple[str, SourceMetadata]:                # def : définir fonction | load_document : nom | file_path : chemin fichier | -> : retour | Tuple[str, SourceMetadata] : renvoie (texte, infos)
     """
-    Convertit un fichier (PDF/DOCX) en Markdown structuré et extrait ses métadonnées.
+    Convertit un fichier (PDF/DOCX/TXT) en Markdown structuré et extrait ses métadonnées.
     """
     path_obj = Path(file_path)                                                  # path_obj : objet chemin | = : assignation | Path(file_path) : conversion chaîne vers objet Path
 
@@ -29,19 +29,43 @@ def load_document(file_path: str) -> Tuple[str, SourceMetadata]:                
     if not path_obj.exists():                                                   # if : condition | not : négation | .exists() : vérifie si le fichier est là
         raise FileNotFoundError(f"File not found: {file_path}")                 # raise : lever une erreur | FileNotFoundError : type d'erreur | f"..." : message
 
+    # ✨ 2. Gestion TXT avec Python natif (simple et rapide)
+    if path_obj.suffix.lower() == ".txt":                                       # if : condition | .suffix : extension | .lower() : minuscule | == ".txt" : test égalité
+        logger.info(f"Loading TXT file (native): {file_path}")                  # logger.info : afficher message | "(native)" : indication méthode
+        
+        try:                                                                    # try : bloc de sécurité
+            # Lecture directe avec gestion d'encodage
+            with open(path_obj, "r", encoding="utf-8", errors="replace") as f:  # with open(...) : ouvrir le fichier | "r" : lecture | encoding="utf-8" : encodage | errors="replace" : remplacer caractères invalides
+                text_content = f.read()                                         # text_content : lire tout le contenu | f.read() : lecture complète
+            
+            # Métadonnées pour TXT
+            metadata = SourceMetadata(                                          # metadata : objet infos source | SourceMetadata(...) : constructeur
+                source_type="txt",                                              # source_type : extension "txt"
+                source_path=str(path_obj.absolute()),                           # source_path : chemin complet absolu
+                title=path_obj.stem                                             # title : nom du fichier sans extension
+            )
+            
+            logger.info(f"Successfully loaded TXT: {file_path}")                 # logger.info : succès
+            return text_content, metadata                                       # return : renvoyer le duo (texte, métadonnées)
+            
+        except Exception as e:                                                  # except : si erreur de lecture
+            logger.error(f"Error reading TXT file {file_path}: {e}")            # logger.error : afficher détail erreur
+            raise e                                                             # raise : relancer l'erreur
+
+    # 3. Pour PDF/DOCX : utiliser Docling (reste inchangé)
     if converter is None:                                                       # if : condition | converter is None : si l'outil n'est pas chargé
         raise RuntimeError("Docling converter is not initialized.")             # raise : lever erreur critique
 
     logger.info(f"Processing file: {file_path}...")                             # logger.info : afficher message | "Processing..." : début du travail
 
     try:                                                                        # try : début du bloc à risque
-        # 2. Conversion intelligente : l'IA lit la mise en page (PDF -> Markdown)
+        # 4. Conversion intelligente : l'IA lit la mise en page (PDF -> Markdown)
         result = converter.convert(file_path)                                   # result : résultat conversion | = : assignation | converter.convert(...) : lance l'analyse Docling
         
-        # 3. Export en Markdown. Le markdown préserve les titres (##) et les tableaux (|...|)
+        # 5. Export en Markdown. Le markdown préserve les titres (##) et les tableaux (|...|)
         markdown_text = result.document.export_to_markdown()                    # markdown_text : contenu texte final | = : assignation | .export_to_markdown() : méthode d'export structuré
 
-        # 4. Création des métadonnées
+        # 6. Création des métadonnées
         metadata = SourceMetadata(                                              # metadata : objet infos source | = : assignation | SourceMetadata(...) : constructeur défini dans schemas.py
             source_type=path_obj.suffix.lower().replace(".", ""),               # source_type : extension sans point (ex: "pdf") | .suffix : extension | .lower() : minuscule
             source_path=str(path_obj.absolute()),                               # source_path : chemin complet absolu | .absolute() : chemin disque entier
