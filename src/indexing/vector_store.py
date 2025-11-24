@@ -6,7 +6,7 @@ from typing import List, Optional                                               
 import lancedb as lancedb                                                       # import : charger la librairie | lancedb : base de données vectorielle ultra-rapide | as lancedb : alias local
 import pyarrow as pa                                                            # import : charger le module | pyarrow : format de données en colonnes (requis par LanceDB) | as pa : alias
 from src.core.config import LANCEDB_DIR, EMBEDDING_DIM, LLM_CONTEXT_WINDOW      # from : importer les constantes | src.core.config : notre fichier de configuration | LANCEDB_DIR, EMBEDDING_DIM, LLM_CONTEXT_WINDOW : chemins et tailles
-from src.core.schemas import Chunk, SearchResult                                # from : importer définitions | src.core.schemas : nos objets Pydantic
+from src.core.schemas import Chunk, SearchResult, SourceMetadata                                # from : importer définitions | src.core.schemas : nos objets Pydantic
 from src.indexing.embedder import FastEmbedder                                  # from : importer l'embedder | src.indexing.embedder : outil d'encodage FastEmbed
 from src.ingestion.cleaner import clean_text_basic                              # from : importer le nettoyeur | src.ingestion.cleaner : pour nettoyer la requête utilisateur
 
