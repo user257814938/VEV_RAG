@@ -1,0 +1,40 @@
+from llama_cpp import Llama
+import os
+import re
+
+# Configuration du modèle
+REPO_ID = "Qwen/Qwen3-4B-GGUF"
+LLM_MODEL_FILENAME = "Qwen3-4B-Q4_K_M.gguf"
+LOCAL_DIR = "models/llm"
+CONFIG_FILE = "src/core/config.py"
+
+# Créer le dossier si nécessaire
+os.makedirs(LOCAL_DIR, exist_ok=True)
+
+# Télécharger le modèle
+print(f"Téléchargement du modèle filename=\"{LLM_MODEL_FILENAME}\"...")
+Llama.from_pretrained(
+    repo_id=REPO_ID,
+    filename=LLM_MODEL_FILENAME,
+    local_dir=LOCAL_DIR
+)
+print(f"Modèle téléchargé avec succès dans {LOCAL_DIR}/")
+
+# Mettre à jour LLM_MODEL_FILE dans config.py
+with open(CONFIG_FILE, 'r') as f:
+    content = f.read()
+
+print(f"\nMise à jour de {CONFIG_FILE}...")
+
+# Remplacer la valeur de LLM_MODEL_FILE
+content = re.sub(
+    r'LLM_MODEL_FILE\s*=\s*"[^"]*"',
+    f'LLM_MODEL_FILE = "{LLM_MODEL_FILENAME}"',
+    content
+)
+
+with open(CONFIG_FILE, 'w') as f:
+    f.write(content)
+
+print(f"✓ LLM_MODEL_FILE mis à jour : \"{LLM_MODEL_FILENAME}\"")
+print("\n✓ Installation terminée avec succès !")
