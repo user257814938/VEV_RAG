@@ -1,62 +1,62 @@
 # 🏗️ Phase 1 : Initialisation & Ingestion de Données
 
 # 1.1 Fondations & Core
-numpy==2.2.6                          # latest version 2.3.5 - 2024/12/21
-python-dotenv==1.2.1                  # latest version 1.2.1 - 2024/11/25
-requests==2.32.5                      # latest version 2.32.5 - 2024/11/25
-huggingface-hub==0.36.0               # latest version 1.1.5 - 2024/11/25
+numpy==2.2.6                          # latest version 2.3.5 - 2025/11/16
+python-dotenv==1.2.1                  # latest version 1.2.1 - 2025/10/26
+requests==2.32.5                      # latest version 2.32.5 - 2025/08/18
+huggingface-hub==0.36.0               # latest version 1.1.5 - 2025/11/20
 datasets==4.4.1                       # latest version 4.4.1 - 2025/11/05
 
 # 1.2 Structure du Code (Squelette)
-pydantic==2.12.4                      # latest version 2.12.4 - 2024/11/25
+pydantic==2.12.4                      # latest version 2.12.4 - 2025/11/05
 
 # 1.3 Ingestion de Documents (Universal Loader)
-docling==2.63.0                       # latest version 2.63.0 - 2024/11/25
+docling==2.63.0                       # latest version 2.63.0 - 2025/11/20
 
 # 1.4 Extraction Web (Connecteur Internet)
-trafilatura==2.0.0                    # latest version 2.0.0 - 2024/11/25
+trafilatura==2.0.0                    # latest version 2.0.0 - 2024/12/03
 beautifulsoup4==4.12.3                # latest version 4.14.2 - 2025/09/29
 
 # 1.5 Normalisation (Hygiène des Données)
-ftfy==6.3.1                           # latest version 6.3.1 - 2024/11/25
-clean-text==0.6.0                     # latest version 0.6.0 - 2024/11/25
-unidecode==1.4.0                      # latest version 1.4.0 - 2024/11/25
+ftfy==6.3.1                           # latest version 6.3.1 - 2024/10/26
+clean-text==0.6.0                     # latest version 0.6.0 - 2022/02/02
+unidecode==1.4.0                      # latest version 1.4.0 - 2025/04/24
 
 # 1.6 Nettoyage Linguistique
-spacy==3.8.11                         # latest version 3.8.11 - 2024/11/25
+spacy==3.8.11                         # latest version 3.8.11 - 2025/11/17
 
 
 # ⚙️ Phase 2 : Traitement, Indexation & Stockage
 
 # 2.2 Vectorisation (Embeddings)
-fastembed==0.7.3                      # latest version 0.7.3 - 2024/11/25
+fastembed==0.7.3                      # latest version 0.7.3 - 2025/08/29
 
 # 2.3 Stockage Vectoriel & Hybride
-lancedb==0.25.3                       # latest version 0.25.3 - 2024/11/25
+lancedb==0.25.3                       # latest version 0.25.3 - 2025/11/07
 
 
 # 🔍 Phase 3 : Pipeline de Recherche
 
-# 3.1 Cache Sémantique - Note: Le projet utilise un cache LanceDB custom (src/retrieval/cache.py) au lieu de GPTCache
-gptcache==0.1.44                      # latest version 0.1.44 - 2024/11/25
+# 3.1 Cache Sémantique
+gptcache==0.1.44                      # latest version 0.1.44 - 2024/08/01 - Note: Le projet utilise un cache LanceDB custom (src/retrieval/cache.py) au lieu de GPTCache
 
 # 3.3 Reranking (Sélection Finale)
-sentence-transformers==5.1.2          # latest version 5.1.2 - 2024/11/25
+sentence-transformers==5.1.2          # latest version 5.1.2 - 2025/10/22
 
 
 # 🧠 Phase 4 : Intelligence & Génération
 
 # 4.1 Optimisation Matérielle + LLM CPU
-llama-cpp-python==0.3.16              # latest version 0.3.16 - 2024/11/25
+llama-cpp-python==0.3.16              # latest version 0.3.16 - 2025/08/15
 
 
 # 🛡️ Phase 5 : Contrôle Qualité & Maintenance
 
 # 5.1 Évaluation Continue
-ragas==0.3.9                          # latest version 0.3.9 - 2024/11/25
+ragas==0.3.9                          # latest version 0.3.9 - 2025/11/11
 
 
 # 🖥️ Phase 6 : Interface Utilisateur
 
 # 6.1 Interface Utilisateur
-streamlit==1.51.0                     # latest version 1.51.0 - 2024/11/25
+streamlit==1.51.0                     # latest version 1.51.0 - 2025/10/29
