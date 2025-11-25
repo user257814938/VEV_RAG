@@ -31,8 +31,8 @@ def initialize_agent() -> Optional[VEVAgent]:                                   
 # Étape 4 — Fonction pour gérer l'upload de documents locaux
 def handle_file_upload(agent: VEVAgent):                                        # def : définir la fonction | handle_file_upload : gestion de l'upload
     uploaded_file = st.sidebar.file_uploader(                                   # uploaded_file : objet fichier | st.sidebar.file_uploader : widget d'upload dans la barre latérale
-        "Upload Document (PDF, DOCX, TXT)",                                     # "Upload..." : label mis à jour avec TXT
-        type=["pdf", "docx", "txt"],                                            # type : extensions acceptées (ajout de "txt")
+        "Upload Document (TXT, MD, PDF, DOCX, XLSX, CSV)",                                     # "Upload..." : label mis à jour avec TXT
+        type=["txt", "md", "pdf", "docx", "xlsx", "csv"],                                            # type : extensions acceptées (ajout de "txt")
         key="file_uploader"                                                     # key : identifiant unique
     )
     
@@ -93,7 +93,7 @@ with st.sidebar.expander("Indexer une URL"):                                    
 st.sidebar.markdown(f"**Status:** LanceDB contains {agent.vector_store.table.count_rows()} chunks.") # st.sidebar.markdown : afficher le nombre de chunks
 
 # --- Clear Cache Section ---
-st.sidebar.markdown("---")  # Séparateur
+st.sidebar.markdown("---")
 st.sidebar.header("🗑️ Gestion du Cache")
 
 with st.sidebar.expander("Vider les Caches"):
@@ -108,7 +108,7 @@ with st.sidebar.expander("Vider les Caches"):
                 if cache_path.exists():
                     shutil.rmtree(cache_path)
                     st.success("✅ Cache sémantique vidé !")
-                    st.info("Rechargez la page pour recréer le cache.")
+                    st.rerun()
                 else:
                     st.info("ℹ️ Cache déjà vide")
             except Exception as e:
@@ -121,7 +121,7 @@ with st.sidebar.expander("Vider les Caches"):
                 if db_path.exists():
                     shutil.rmtree(db_path)
                     st.success("✅ Base vectorielle vidée !")
-                    st.info("Rechargez la page pour recréer la DB.")
+                    st.rerun()
                 else:
                     st.info("ℹ️ Base déjà vide")
             except Exception as e:
@@ -143,7 +143,7 @@ with st.sidebar.expander("Vider les Caches"):
             
             if cleared:
                 st.success(f"✅ Nettoyé : {', '.join(cleared)}")
-                st.info("🔄 Rechargez la page (Ctrl+R) pour recréer les caches.")
+                st.rerun()
             else:
                 st.info("ℹ️ Tous les caches sont déjà vides")
         except Exception as e:

@@ -13,37 +13,21 @@ CONFIG_FILE = "src/core/config.py"
 
 # Catalogue de modeles disponibles
 AVAILABLE_MODELS = {
-    "1": {
-        "NAME": "Qwen2.5-0.5B (Ultra-Leger)",
-        "REPO_ID": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
-        "LLM_MODEL_FILE": "qwen2.5-0.5b-instruct-fp16.gguf",
-        "SIZE": "~1 GB",
-        "LLM_CONTEXT_WINDOW": 4096,
-        "LLM_MAX_TOKENS": 512
+    "Qwen3-0.6B": {
+        "NAME": "Qwen3-0.6B",
+        "REPO_ID": "Qwen/Qwen3-0.6B-GGUF",
+        "LLM_MODEL_FILE": "Qwen3-0.6B-Q8_0.gguf",
+        "SIZE": "639 MB",
+        "LLM_CONTEXT_WINDOW": 4000,
+        "LLM_MAX_TOKENS": 1000
     },
-    "2": {
-        "NAME": "Qwen2.5-1.5B (Leger)",
-        "REPO_ID": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
-        "LLM_MODEL_FILE": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
-        "SIZE": "~1 GB",
-        "LLM_CONTEXT_WINDOW": 4096,
-        "LLM_MAX_TOKENS": 1024
-    },
-    "3": {
-        "NAME": "Qwen3-4B (Recommande)",
+    "Qwen3-4B": {
+        "NAME": "Qwen3-4B",
         "REPO_ID": "Qwen/Qwen3-4B-GGUF",
         "LLM_MODEL_FILE": "Qwen3-4B-Q4_K_M.gguf",
-        "SIZE": "~2.6 GB",
-        "LLM_CONTEXT_WINDOW": 8200,
-        "LLM_MAX_TOKENS": 1024
-    },
-    "4": {
-        "NAME": "TinyLlama-1.1B (Tres leger)",
-        "REPO_ID": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
-        "LLM_MODEL_FILE": "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-        "SIZE": "~650 MB",
-        "LLM_CONTEXT_WINDOW": 2048,
-        "LLM_MAX_TOKENS": 512
+        "SIZE": "2.5 GB",
+        "LLM_CONTEXT_WINDOW": 32768,
+        "LLM_MAX_TOKENS": 4096
     }
 }
 
@@ -198,7 +182,7 @@ def update_config(model):
             )
         else:
             # Mise a jour complete avec tous les parametres
-            filename = model['LLM_MODEL_FILENAME']
+            filename = model['LLM_MODEL_FILE']
             
             # 1. Remplacer LLM_MODEL_FILE
             content = re.sub(
@@ -252,9 +236,21 @@ def change_active_model():
         
         idx = int(choice) - 1
         if 0 <= idx < len(models):
-            # Pour change_active_model, on passe juste le filename
-            # car on ne connait pas les autres parametres
-            update_config(models[idx])
+            selected_filename = models[idx]
+            
+            # Trouver le dictionnaire complet du modele dans AVAILABLE_MODELS
+            model_dict = None
+            for key, model in AVAILABLE_MODELS.items():
+                if model['LLM_MODEL_FILE'] == selected_filename:
+                    model_dict = model
+                    break
+            
+            # Si trouve dans AVAILABLE_MODELS, passer le dict complet
+            # Sinon, passer juste le filename (ancien comportement)
+            if model_dict:
+                update_config(model_dict)
+            else:
+                update_config(selected_filename)
         else:
             print("Numero invalide.\n")
     except ValueError:
