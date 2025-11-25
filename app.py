@@ -6,6 +6,7 @@ import logging                                                                  
 from pathlib import Path                                                        # from : importer le chemin | pathlib : gestion des chemins
 from typing import Optional                                                     # from : importer le typage | typing : module types | Optional : type pour gérer l'absence
 from time import time                                                           # from : importer depuis le module temps | time : fonction pour mesurer la durée d'exécution
+import shutil                                                                   # import : pour la suppression de dossiers (clear cache)
 
 # Importer les classes de la logique métier (Le Cœur du RAG est dans main.py)
 from src.core.config import RAW_DIR                                             # from : importer la constante | src.core.config : configuration | RAW_DIR : chemin du dossier brut
@@ -50,7 +51,7 @@ def handle_file_upload(agent: VEVAgent):                                        
 # Étape 5 — Fonction pour afficher les sources (Reranked Chunks)
 def display_sources(response: GeneratedAnswer):                                 # def : définir la fonction | display_sources : afficher les sources
     if response.sources:                                                        # if : si la réponse contient des sources
-        st.markdown("### Sources Utilisées")                                    # st.markdown : afficher un titre Markdown
+        st.markdown("### Sources Utilisées")                                    # st.markdown : afficher un titre Markdown
         for src in response.sources:                                            # for : boucle sur chaque source
             score = src.score                                                   # score : score de pertinence
             page = src.chunk.metadata.page_number                               # page : numéro de page
@@ -90,6 +91,63 @@ with st.sidebar.expander("Indexer une URL"):                                    
             st.warning("Veuillez entrer une URL valide (commençant par http).") # st.warning : avertissement
 
 st.sidebar.markdown(f"**Status:** LanceDB contains {agent.vector_store.table.count_rows()} chunks.") # st.sidebar.markdown : afficher le nombre de chunks
+
+# --- Clear Cache Section ---
+st.sidebar.markdown("---")  # Séparateur
+st.sidebar.header("🗑️ Gestion du Cache")
+
+with st.sidebar.expander("Vider les Caches"):
+    st.write("⚠️ **Attention** : Cette action est irréversible !")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🧹 Cache Réponses", help="Vider le cache sémantique (réponses RAG)", use_container_width=True):
+            try:
+                cache_path = Path("models/lancedb_cache")
+                if cache_path.exists():
+                    shutil.rmtree(cache_path)
+                    st.success("✅ Cache sémantique vidé !")
+                    st.info("Rechargez la page pour recréer le cache.")
+                else:
+                    st.info("ℹ️ Cache déjà vide")
+            except Exception as e:
+                st.error(f"❌ Erreur : {e}")
+    
+    with col2:
+        if st.button("🗄️ Cache Documents", help="Vider la base vectorielle (tous les documents)", use_container_width=True):
+            try:
+                db_path = Path("data/lancedb")
+                if db_path.exists():
+                    shutil.rmtree(db_path)
+                    st.success("✅ Base vectorielle vidée !")
+                    st.info("Rechargez la page pour recréer la DB.")
+                else:
+                    st.info("ℹ️ Base déjà vide")
+            except Exception as e:
+                st.error(f"❌ Erreur : {e}")
+    
+    if st.button("🚨 Tout Vider", help="Vider tous les caches (réponses + documents)", type="primary", use_container_width=True):
+        try:
+            cleared = []
+            cache_path = Path("models/lancedb_cache")
+            db_path = Path("data/lancedb")
+            
+            if cache_path.exists():
+                shutil.rmtree(cache_path)
+                cleared.append("Cache sémantique")
+            
+            if db_path.exists():
+                shutil.rmtree(db_path)
+                cleared.append("Base vectorielle")
+            
+            if cleared:
+                st.success(f"✅ Nettoyé : {', '.join(cleared)}")
+                st.info("🔄 Rechargez la page (Ctrl+R) pour recréer les caches.")
+            else:
+                st.info("ℹ️ Tous les caches sont déjà vides")
+        except Exception as e:
+            st.error(f"❌ Erreur : {e}")
 
 # --- Chat Principal (Recherche) ---
 query = st.chat_input("Posez votre question à VEV Agent...")                    # query : champ de saisie du chat

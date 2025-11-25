@@ -3,7 +3,7 @@
 1. **Installer les dépendances** : `pip install -r requirements.txt`
 2. **Installer / Lister / Changer / Supprimer un LLM** : `python models/llm/llm_model_installer.py`
 3. **Lancer l'application** : `streamlit run app.py`
-
+4. **Nettoyer les caches** : `python clear_cache.py`
 
 
 

@@ -1,2 +1,0 @@
-# Rôle : Base de Données Vectorielle
-# Pourquoi est-il vide au départ ? : C'est l'emplacement de votre base de données LanceDB. Dès que vous indexez un document, LanceDB crée plusieurs fichiers (.lance et .json) dans ce dossier pour stocker les vecteurs et les métadonnées.

@@ -28,7 +28,16 @@ class VectorStore:                                                              
         """Crée la table LanceDB si elle n'existe pas, sinon la retourne."""
         if self.TABLE_NAME in self.db.table_names():                            # if : condition | in : vérifie si le nom de table est dans la liste des tables existantes
             logger.info(f"Connected to existing table: {self.TABLE_NAME}")      # logger.info : confirmation de connexion
-            return self.db.open_table(self.TABLE_NAME)                          # return : retourner la table existante
+            table = self.db.open_table(self.TABLE_NAME)                         # table : ouvrir la table existante
+            
+            # ✨ Créer un index FTS si ce n'est pas déjà fait (pour recherche hybride)
+            try:                                                                # try : tenter de créer l'index
+                table.create_fts_index("text", replace=True)                    # create_fts_index : index Full-Text Search sur la colonne 'text' | replace=True : recréer si existe déjà
+                logger.info("✅ FTS index created/updated on 'text' column")    # logger.info : confirmation création index
+            except Exception as e:                                              # except : si erreur (index déjà existant)
+                logger.debug(f"FTS index info: {e}")                            # logger.debug : log discret de l'info
+            
+            return table                                                        # return : retourner la table avec index
         else:                                                                   # else : sinon (la table n'existe pas)
             logger.info(f"Creating new table: {self.TABLE_NAME}")               # logger.info : message de création
             
@@ -48,7 +57,12 @@ class VectorStore:                                                              
                 self.TABLE_NAME,                                                # self.TABLE_NAME : nom
                 schema=schema                                                   # schema=schema : utilise le schéma défini
             )
-            return table                                                        # return : retourner la table nouvellement créée
+            
+            # ✨ Créer l'index FTS immédiatement pour la nouvelle table
+            table.create_fts_index("text")                                      # create_fts_index : index Full-Text Search sur la colonne 'text'
+            logger.info("✅ FTS index created on new table")                     # logger.info : confirmation création index
+            
+            return table                                                        # return : retourner la table nouvellement créée avec index
 
     # Étape 3.3 — Ajout de données
     def add_chunks(self, chunks: List[Chunk]):                                  # def : définir la méthode | add_chunks : ajouter des morceaux de texte
@@ -76,12 +90,75 @@ class VectorStore:                                                              
         # 2. Encodage de la requête (pour la recherche vectorielle)
         query_vector = self.embedder.embed_query(query)                         # query_vector : vecteur numpy de la requête
 
-        # 3. Exécution de la recherche LanceDB - LanceDB gère l'hybride nativement : on fournit le vecteur ET le texte (full_text_search)
-        results = self.table.search(query_vector)                               # results : objet recherche
-        
-        results = (results                                                      # results : on continue le pipeline de recherche sur l'objet results
-                   .limit(top_k)                                                # .limit(top_k) : limite le nombre de résultats maximum
-                   .to_list())                                                  # .to_list() : exécute la recherche et renvoie une liste de dictionnaires PyArrow
+        # 3. ✨ Exécution de la recherche HYBRIDE (Vectorielle + FTS avec Reciprocal Rank Fusion)
+        # LanceDB 0.25.3 : Fusion manuelle des résultats vectoriels et FTS avec algorithme RRF
+        try:                                                                    # try : essayer la recherche hybride
+            # 3.1 Recherche Vectorielle (Sémantique)
+            vector_results = (self.table.search(query_vector)                   # search : recherche vectorielle
+                              .limit(top_k * 2)                                 # .limit : prendre 2x plus pour la fusion
+                              .to_list())                                       # .to_list() : exécuter
+            
+            # 3.2 Recherche FTS (Mots-clés exacts)
+            # Utiliser where() pour simuler FTS si create_fts_index ne fonctionne pas parfaitement
+            fts_results = []                                                    # fts_results : liste résultats FTS
+            try:                                                                # try : tenter recherche FTS
+                # Recherche FTS via SQL LIKE (simple mais efficace)
+                fts_results = (self.table.search(query_vector)                  # search : base vectorielle
+                               .where(f"text LIKE '%{clean_query}%'", prefilter=True) # where : filtre FTS SQL
+                               .limit(top_k)                                    # .limit : top résultats FTS
+                               .to_list())                                      # .to_list() : exécuter
+            except Exception:                                                   # except : si FTS échoue
+                pass                                                            # pass : continuer sans FTS
+            
+            # 3.3 Fusion Hybride avec Reciprocal Rank Fusion (RRF)
+            if fts_results:                                                     # if : si FTS a des résultats
+                rrf_k = 60                                                      # rrf_k : constante RRF standard
+                doc_scores = {}                                                 # doc_scores : dictionnaire scores fusionnés
+                
+                # Ajouter scores vectoriels
+                for i, res in enumerate(vector_results):                        # for : parcourir résultats vectoriels
+                    doc_id = res['id']                                          # doc_id : identifiant unique
+                    doc_scores[doc_id] = {                                      # doc_scores : initialiser
+                        'data': res,                                            # data : résultat complet
+                        'vector_rank': i + 1,                                   # vector_rank : rang vectoriel
+                        'fts_rank': None                                        # fts_rank : pas encore calculé
+                    }
+                
+                # Ajouter scores FTS
+                for i, res in enumerate(fts_results):                           # for : parcourir résultats FTS
+                    doc_id = res['id']                                          # doc_id : identifiant
+                    if doc_id in doc_scores:                                    # if : document déjà dans vectoriel
+                        doc_scores[doc_id]['fts_rank'] = i + 1                  # fts_rank : ajouter rang FTS
+                    else:                                                       # else : nouveau document (FTS seulement)
+                        doc_scores[doc_id] = {                                  # doc_scores : créer entrée
+                            'data': res,
+                            'vector_rank': None,
+                            'fts_rank': i + 1
+                        }
+                
+                # Calculer score RRF final
+                for doc_id in doc_scores:                                       # for : parcourir tous documents
+                    v_rank = doc_scores[doc_id]['vector_rank'] or (top_k * 3)  # v_rank : rang vectoriel ou pénalité
+                    f_rank = doc_scores[doc_id]['fts_rank'] or (top_k * 3)     # f_rank : rang FTS ou pénalité
+                    rrf_score = (1 / (rrf_k + v_rank)) + (1 / (rrf_k + f_rank)) # rrf_score : formule RRF classique
+                    doc_scores[doc_id]['rrf_score'] = rrf_score                 # rrf_score : stocker score final
+                
+                # Trier par score RRF et prendre top_k
+                sorted_docs = sorted(doc_scores.values(), key=lambda x: x['rrf_score'], reverse=True)[:top_k] # sorted : tri par RRF
+                results = [doc['data'] for doc in sorted_docs]                  # results : extraire données
+                
+                logger.info(f"✅ Hybrid search (RRF fusion) completed: {len(vector_results)} vector + {len(fts_results)} FTS → {len(results)} final") # logger : succès
+            else:                                                               # else : pas de résultats FTS
+                results = vector_results[:top_k]                                # results : vectoriel seulement
+                logger.info(f"✅ Vector-only search (FTS returned no results): {len(results)} results") # logger : vectoriel seul
+            
+        except Exception as e:                                                  # except : si erreur globale
+            logger.warning(f"Hybrid search failed, falling back to vector-only: {e}") # logger : avertissement
+            
+            # Fallback : Recherche vectorielle simple
+            results = (self.table.search(query_vector)                          # results : recherche vectorielle
+                       .limit(top_k)                                            # .limit(top_k) : limite
+                       .to_list())                                              # .to_list() : exécuter
 
         # 4. Formatage et conversion en objet SearchResult
         formatted_results = []                                                  # formatted_results : liste de sortie finale
@@ -103,10 +180,15 @@ class VectorStore:                                                              
                 chunk_index=0 # Non utilisé pour la recherche
             )
 
+
             # Création de l'objet SearchResult
+            # Note: LanceDB retourne '_distance' (plus petit = meilleur). On convertit en score de similarité (plus grand = meilleur).
+            distance = res.get('_distance', 0.0)                                # distance : récupérer la distance du résultat LanceDB
+            similarity_score = 1.0 - distance                                   # similarity_score : conversion Distance → Score (1 - distance)
+
             search_res = SearchResult(                                          # search_res : objet Pydantic résultat de recherche
                 chunk=chunk_obj,                                                # chunk : le chunk complet
-                score=res['score'],                                             # score : score de similarité (renvoyé par LanceDB)
+                score=similarity_score,                                         # score : score calculé (1 - distance)
                 rank=i + 1                                                      # rank : rang dans le classement
             )
             formatted_results.append(search_res)                                # formatted_results.append(...) : ajout au résultat final
