@@ -33,39 +33,46 @@ class LanceSemanticCache:
 
     def lookup(self, query: str) -> Optional[str]:
         """Retourne une réponse si une requête similaire existe."""
-        q_vec = self.embedder.embed_query(query)                                # q_vec : encoder la requête
+        try:
+            q_vec = self.embedder.embed_query(query)                                # q_vec : encoder la requête
 
-        # Recherche Top-1 dans LanceDB
-        res = (
-            self.table.search(q_vec)
-            .limit(1)
-            .to_list()
-        )
+            # Recherche Top-1 dans LanceDB
+            res = (
+                self.table.search(q_vec)
+                .limit(1)
+                .to_list()
+            )
 
-        if not res:                                                             # if : si aucun résultat
+            if not res:                                                             # if : si aucun résultat
+                return None
+
+            best = res[0]                                                           # best : meilleur résultat
+            best_vec = np.array(best["embedding"], dtype=np.float32)                # best_vec : vecteur du meilleur résultat
+            sim = self._cosine(q_vec, best_vec)                                     # sim : similarité cosine
+
+            if sim >= self.threshold:                                               # if : si similarité suffisante
+                logger.info(f"Cache hit! Similarity: {sim:.3f}")                    # logger.info : log du cache hit
+                return best["answer"]                                               # return : réponse cachée
+
+            logger.info(f"Cache miss (best sim: {sim:.3f})")                        # logger.info : cache miss
             return None
-
-        best = res[0]                                                           # best : meilleur résultat
-        best_vec = np.array(best["embedding"], dtype=np.float32)                # best_vec : vecteur du meilleur résultat
-        sim = self._cosine(q_vec, best_vec)                                     # sim : similarité cosine
-
-        if sim >= self.threshold:                                               # if : si similarité suffisante
-            logger.info(f"Cache hit! Similarity: {sim:.3f}")                    # logger.info : log du cache hit
-            return best["answer"]                                               # return : réponse cachée
-
-        logger.info(f"Cache miss (best sim: {sim:.3f})")                        # logger.info : cache miss
-        return None
+        except Exception as e:
+            logger.error(f"⚠️ Cache lookup failed (corruption suspected): {e}")
+            return None
 
     def store(self, query: str, answer: str):
         """Ajoute une entrée au cache."""
-        q_vec = self.embedder.embed_query(query).tolist()                       # q_vec : encoder la requête et convertir en liste
-        self.table.add([{                                                       # self.table.add : ajouter une entrée
-            "query": query,                                                     # "query" : requête texte
-            "answer": answer,                                                   # "answer" : réponse générée
-            "embedding": q_vec,                                                 # "embedding" : vecteur de la requête
-            "ts": datetime.utcnow().isoformat()                                 # "ts" : timestamp UTC
-        }])
-        logger.info("Answer stored in cache")                                   # logger.info : confirmation
+        try:
+            q_vec = self.embedder.embed_query(query).tolist()                       # q_vec : encoder la requête et convertir en liste
+            self.table.add([{                                                       # self.table.add : ajouter une entrée
+                "query": query,                                                     # "query" : requête texte
+                "answer": answer,                                                   # "answer" : réponse générée
+                "embedding": q_vec,                                                 # "embedding" : vecteur de la requête
+                "ts": datetime.utcnow().isoformat()                                 # "ts" : timestamp UTC
+            }])
+            logger.info("Answer stored in cache")                                   # logger.info : confirmation
+        except Exception as e:
+            logger.error(f"⚠️ Failed to store in cache: {e}")
 
 
 def init_semantic_cache(embedder: FastEmbedder) -> Optional[LanceSemanticCache]:

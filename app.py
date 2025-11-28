@@ -13,6 +13,7 @@ from src.core.config import RAW_DIR                                             
 from src.core.schemas import GeneratedAnswer                                    # from : importer le schéma | src.core.schemas : notre objet réponse structurée
 from src.retrieval.cache import init_semantic_cache                             # from : importer le cache | src.retrieval.cache : fonction d'initialisation du cache
 from main import VEVAgent                                                       # from : importer la classe de l'agent | main : fichier principal | VEVAgent : l'orchestrateur du RAG
+from clear_cache import clear_semantic_cache, clear_vector_db                   # from : importer les fonctions de nettoyage
 
 # Étape 2 — Configuration de la page Streamlit
 st.set_page_config(page_title="VEV Agent", layout="wide")                       # st.set_page_config : configurer la page | page_title : titre onglet | layout="wide" : utilise toute la largeur
@@ -31,15 +32,19 @@ def initialize_agent() -> Optional[VEVAgent]:                                   
 # Étape 4 — Fonction pour gérer l'upload de documents locaux
 def handle_file_upload(agent: VEVAgent):                                        # def : définir la fonction | handle_file_upload : gestion de l'upload
     uploaded_file = st.sidebar.file_uploader(                                   # uploaded_file : objet fichier | st.sidebar.file_uploader : widget d'upload dans la barre latérale
-        "Upload Document (TXT, MD, PDF, DOCX, XLSX, CSV)",                                     # "Upload..." : label mis à jour avec TXT
-        type=["txt", "md", "pdf", "docx", "xlsx", "csv"],                                            # type : extensions acceptées (ajout de "txt")
+        "Upload Document (TXT, MD, PDF, DOCX, XLSX, CSV, PPTX, HTML)",          # "Upload..." : label mis à jour avec PPTX et HTML
+        type=["txt", "md", "pdf", "docx", "xlsx", "csv", "pptx", "html", "htm"], # type : extensions acceptées (ajout de pptx, html, htm)
         key="file_uploader"                                                     # key : identifiant unique
     )
     
     if uploaded_file is not None:                                               # if : si un fichier est sélectionné
         temp_path = RAW_DIR / uploaded_file.name                                # temp_path : chemin pour sauvegarder le fichier
-        with open(temp_path, "wb") as f:                                        # with open(...) : ouvrir le fichier en écriture binaire
-            f.write(uploaded_file.read())                                       # f.write(...) : écrire le contenu du fichier uploadé
+        try:
+            with open(temp_path, "wb") as f:                                    # with open(...) : ouvrir le fichier en écriture binaire
+                f.write(uploaded_file.read())                                   # f.write(...) : écrire le contenu du fichier uploadé
+        except PermissionError:
+            st.sidebar.error(f"⚠️ Erreur de permission : Impossible d'écrire le fichier '{uploaded_file.name}'. Assurez-vous qu'il n'est pas ouvert dans Excel ou un autre programme.")
+            return
 
         with st.spinner(f"Indexing {uploaded_file.name}..."):                   # with st.spinner : afficher un spinner de chargement
             try:                                                                # try : tenter l'ingestion
@@ -104,48 +109,33 @@ with st.sidebar.expander("Vider les Caches"):
     with col1:
         if st.button("🧹 Cache Réponses", help="Vider le cache sémantique (réponses RAG)", use_container_width=True):
             try:
-                cache_path = Path("models/lancedb_cache")
-                if cache_path.exists():
-                    shutil.rmtree(cache_path)
-                    st.success("✅ Cache sémantique vidé !")
-                    st.rerun()
-                else:
-                    st.info("ℹ️ Cache déjà vide")
+                clear_semantic_cache()
+                # Invalider le cache de l'agent pour forcer le rechargement
+                initialize_agent.clear()
+                st.success("✅ Cache sémantique vidé !")
+                st.rerun()
             except Exception as e:
                 st.error(f"❌ Erreur : {e}")
     
     with col2:
         if st.button("🗄️ Cache Documents", help="Vider la base vectorielle (tous les documents)", use_container_width=True):
             try:
-                db_path = Path("data/lancedb")
-                if db_path.exists():
-                    shutil.rmtree(db_path)
-                    st.success("✅ Base vectorielle vidée !")
-                    st.rerun()
-                else:
-                    st.info("ℹ️ Base déjà vide")
+                clear_vector_db()
+                # Invalider le cache de l'agent pour forcer le rechargement
+                initialize_agent.clear()
+                st.success("✅ Base vectorielle vidée !")
+                st.rerun()
             except Exception as e:
                 st.error(f"❌ Erreur : {e}")
     
     if st.button("🚨 Tout Vider", help="Vider tous les caches (réponses + documents)", type="primary", use_container_width=True):
         try:
-            cleared = []
-            cache_path = Path("models/lancedb_cache")
-            db_path = Path("data/lancedb")
-            
-            if cache_path.exists():
-                shutil.rmtree(cache_path)
-                cleared.append("Cache sémantique")
-            
-            if db_path.exists():
-                shutil.rmtree(db_path)
-                cleared.append("Base vectorielle")
-            
-            if cleared:
-                st.success(f"✅ Nettoyé : {', '.join(cleared)}")
-                st.rerun()
-            else:
-                st.info("ℹ️ Tous les caches sont déjà vides")
+            clear_semantic_cache()
+            clear_vector_db()
+            # Invalider le cache de l'agent pour forcer le rechargement
+            initialize_agent.clear()
+            st.success("✅ Tous les caches ont été vidés !")
+            st.rerun()
         except Exception as e:
             st.error(f"❌ Erreur : {e}")
 
