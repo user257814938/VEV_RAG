@@ -12,6 +12,7 @@ pydantic==2.12.4                      # latest version 2.12.4 - 2025/11/05
 
 # 1.3 Ingestion de Documents (Universal Loader)
 docling==2.63.0                       # latest version 2.63.0 - 2025/11/20
+openai-whisper
 
 # 1.4 Extraction Web (Connecteur Internet)
 trafilatura==2.0.0                    # latest version 2.0.0 - 2024/12/03

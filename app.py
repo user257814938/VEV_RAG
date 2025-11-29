@@ -32,8 +32,14 @@ def initialize_agent() -> Optional[VEVAgent]:                                   
 # Étape 4 — Fonction pour gérer l'upload de documents locaux
 def handle_file_upload(agent: VEVAgent):                                        # def : définir la fonction | handle_file_upload : gestion de l'upload
     uploaded_file = st.sidebar.file_uploader(                                   # uploaded_file : objet fichier | st.sidebar.file_uploader : widget d'upload dans la barre latérale
-        "Upload Document (TXT, MD, PDF, DOCX, XLSX, CSV, PPTX, HTML)",          # "Upload..." : label mis à jour avec PPTX et HTML
-        type=["txt", "md", "pdf", "docx", "xlsx", "csv", "pptx", "html", "htm"], # type : extensions acceptées (ajout de pptx, html, htm)
+        "Upload Document (Office, Web, Images, Audio, JSON...)",                # "Upload..." : label générique
+        type=[                                                                  # type : liste exhaustive des extensions supportées
+            "txt", "md",                                                        # Texte brut (Natif)
+            "pdf", "docx", "xlsx", "csv", "pptx",                               # Office (Docling)
+            "html", "htm", "xml", "adoc", "vtt", "json",                        # Web & Spécialisé (Docling + JSON)
+            "png", "jpg", "jpeg", "bmp", "tiff", "tif", "webp",                 # Images (Docling OCR)
+            "mp3", "wav"                                                        # Audio (Docling Whisper)
+        ],
         key="file_uploader"                                                     # key : identifiant unique
     )
     
@@ -121,6 +127,10 @@ with st.sidebar.expander("Vider les Caches"):
         if st.button("🗄️ Cache Documents", help="Vider la base vectorielle (tous les documents)", use_container_width=True):
             try:
                 clear_vector_db()
+                # Reset File Uploader
+                if "file_uploader" in st.session_state:
+                    del st.session_state["file_uploader"]
+                
                 # Invalider le cache de l'agent pour forcer le rechargement
                 initialize_agent.clear()
                 st.success("✅ Base vectorielle vidée !")
@@ -132,6 +142,10 @@ with st.sidebar.expander("Vider les Caches"):
         try:
             clear_semantic_cache()
             clear_vector_db()
+            # Reset File Uploader
+            if "file_uploader" in st.session_state:
+                del st.session_state["file_uploader"]
+
             # Invalider le cache de l'agent pour forcer le rechargement
             initialize_agent.clear()
             st.success("✅ Tous les caches ont été vidés !")

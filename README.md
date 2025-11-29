@@ -1,6 +1,7 @@
 ## 🚀 Installation Rapide
 
 1. **Installer les dépendances** : `pip install -r requirements.txt`
+2. ** Pour traiter l'audio, installer FFmpeg manuellement. Le plus simple sur Windows est d'utiliser winget dans un terminal (PowerShell ou CMD)** : 'winget install Gyan.FFmpeg'
 2. **Télécharger le reranker** : `python src/retrieval/reranker_installer.py`
 3. **Installer / Lister / Changer / Supprimer un LLM** : `python models/llm/llm_model_installer.py`
 4. **Lancer l'application** : `streamlit run app.py`
@@ -230,7 +231,27 @@ VEV_RAG/
 
 ---
 
-## 🔧 Technologies
+## � Analyse Complète des Formats Supportés
+
+| Catégorie | Format | Extension | Moteur | Statut |
+| :--- | :--- | :--- | :--- | :--- |
+| **Documents Office** | PDF | `.pdf` | Docling (v2) | ✅ Supporté (avec OCR & Tableaux) |
+| | Microsoft Word | `.docx` | Docling (v2) | ✅ Supporté |
+| | Microsoft Excel | `.xlsx` | Docling (v2) | ✅ Supporté (Conversion Markdown) |
+| | Microsoft PowerPoint | `.pptx` | Docling (v2) | ✅ Supporté |
+| **Texte & Web** | Texte Brut | `.txt` | **Python Natif** | ✅ Supporté (Ultra-rapide) |
+| | Markdown | `.md` | **Python Natif** | ✅ Supporté (Ultra-rapide) |
+| | HTML / XHTML | `.html`, `.htm` | Docling (v2) | ✅ Supporté |
+| | XML / AsciiDoc | `.xml`, `.adoc` | Docling (v2) | ✅ Supporté |
+| | WebVTT | `.vtt` | Docling (v2) | ✅ Supporté (Sous-titres) |
+| **Images (OCR)** | Images | `.png`, `.jpg`, `.tiff`, `.bmp`, `.webp` | Docling (OCR) | ✅ Supporté |
+| **Audio (IA)** | Audio | `.mp3`, `.wav` | Whisper Turbo | ✅ Supporté (Transcription) |
+| **Spécialisé** | JATS/USPTO XML | `.xml` | Docling (v2) | ✅ Supporté |
+| | Docling JSON | `.json` | Docling (v2) | ✅ Supporté |
+
+---
+
+## �🔧 Technologies
 
 ### Stack Complète
 

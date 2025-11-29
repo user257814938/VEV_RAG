@@ -29,14 +29,14 @@ def clear_semantic_cache():
 
 
 def clear_vector_db():
-    """Vide la base vectorielle (chunks de documents)"""
+    """Vide la base vectorielle (chunks de documents) et les fichiers bruts."""
+    # 1. Vider LanceDB
     if VECTOR_DB.exists():
         print(f"🧹 Suppression de la base vectorielle: {VECTOR_DB}")
         shutil.rmtree(VECTOR_DB)
         print(f"✅ Base vectorielle vidée ({VECTOR_DB})")
     else:
         print(f"ℹ️  Base vectorielle déjà vide ({VECTOR_DB})")
-
 
 def main():
     parser = argparse.ArgumentParser(

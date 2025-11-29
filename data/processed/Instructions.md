@@ -1,2 +1,0 @@
-# Rôle : Fichiers Intermédiaires
-# Pourquoi est-il vide au départ ? : Le pipeline pourrait y stocker les fichiers Markdown (.md) générés par Docling ou Trafilatura avant le chunking. Cela permet d'inspecter le texte nettoyé.
